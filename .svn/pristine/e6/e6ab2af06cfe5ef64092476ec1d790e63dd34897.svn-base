@@ -1,0 +1,54 @@
+#lang typed/racket
+(require typed/test-engine/racket-tests)
+
+(require "../include/cs151-core.rkt")
+(require "../include/cs151-image.rkt")
+(require "../include/cs151-universe.rkt")
+
+(: dt Positive-Real)
+(define dt 1/30)
+
+(define-struct Ball
+  ([y-position : Real] ;; the height of the ball's center in meters, with the ground y=0
+   [radius     : Integer] ;; in meters
+   [velocity   : Real] ;; in meters per second
+   [elasticity : Real] ;; a number between 0 and 1
+   [color      : Image-Color]))
+
+(define-struct World
+  ([ball1 : Ball]
+   [ball2 : Ball]
+   [ball3 : Ball]
+   [background : Image]
+   [time-elapsed : Real]))
+
+;; make-circle: draws circle from information given to Ball
+(: make-circle (Ball -> Image))
+(define (make-circle b)
+  (circle (Ball-radius b) "solid" (Ball-color b)))
+
+;(make-circle (Ball 200 10 0 0.7 "darkred"))
+
+(: draw (World -> Image))
+(define (draw w)
+  (match w
+    [(World b1 b2 b3 image time)
+     ;(beside (make-circle b1) (make-circle b2) (make-circle b3))
+     (place-image (make-circle b1) (exact-ceiling (* 1/4 (image-width image))) (Ball-y-position b1) image)
+     (place-image (make-circle b2) (exact-ceiling (* 1/2 (image-width image))) (Ball-y-position b2) image)
+     (place-image (make-circle b3) (exact-ceiling (* 3/4 (image-width image))) (Ball-y-position b3) image)]))
+
+      ;(above (text (number->string time) 30 "black") (image)))]))
+
+(draw (World (Ball 200 10 0 0.7 "darkred")
+(Ball 200 10 0 0.8 "orange")
+(Ball 200 10 0 0.6 "darkblue")
+(above (rectangle 200 300 "solid" "dodgerblue")
+       (rectangle 200  40 "solid" "green")) 0))
+
+;(run-simulation
+; (Ball 200 10 0 0.7 "darkred")
+; (Ball 200 10 0 0.8 "orange")
+; (Ball 200 10 0 0.6 "darkblue")
+; (above (rectangle 200 300 "solid" "dodgerblue")
+;        (rectangle 200  40 "solid" "green")))

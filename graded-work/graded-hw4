@@ -1,0 +1,51 @@
+Homework 4 guideline
+
+;; === correctness ===
+
+;; format         3 / 3
+;; days-in-month  3 / 3
+;; valid?         3 / 4
+
+;; before?        4 / 4
+;; after?         4 / 4
+
+;; last-of-month? 3 / 3
+
+;; tomorrow       3 / 3
+;; yesterday      3 / 3
+;; add-days       3 / 3
+
+;; whole-month    3 / 3
+;; dow            6 / 6
+
+;; weekends       3 / 3
+;; memorial-day   3 / 3
+;; labor-day      3 / 3
+;; thanksgiving   3 / 3
+
+;; calendar       8 / 8
+
+;; === style ===
+
+;; code layout                       5 / 6
+;; identifiers are well named        4 / 4
+;; program decomposition (helpers)   6 / 6
+
+;; contracts (type ascriptions)      6 / 6
+;; well-written purposes             6 / 6
+;; adequate tests                    6 / 6
+
+;; clarity (clear logic)             6 / 6
+
+;; svn used correctly                1 / 1
+
+;; _total-score_                  98 / 100
+
+graded by Gwendolyn Gilbert-Snyder
+
+Great work!
+Your valid? function is slightly incorrect, because it should also make sure
+the month is not 0.
+Make sure your lines of code are all under 80 characters (including
+comments!).
+

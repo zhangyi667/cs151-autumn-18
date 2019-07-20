@@ -1,0 +1,154 @@
+#lang typed/racket
+(require typed/test-engine/racket-tests)
+(require "../include/cs151-core.rkt")
+
+(define-struct Finish
+  ([lname : String]
+   [fname : String]
+   [time-millis : Integer]
+   [school : String]
+   [grade : Integer]))
+
+(define-struct (Ranked a)
+  ([rank : Integer]
+   [item : a]))
+
+;; two-digits: adds a 0 if necessary to front of integer to make it 2 digits
+(: two-digits (Integer -> String))
+(define (two-digits i)
+  (if (< i 10) (string-append "0" (number->string i)) (number->string i)))
+
+(check-expect (two-digits 0) "00")
+(check-expect (two-digits 5) "05")
+
+;; three-digits: adds 0s if necessary to make integer 3 digits
+(: three-digits (Integer -> String))
+(define (three-digits i)
+  (cond
+   [(< i 10) (string-append "00" (number->string i))]
+   [(< i 100) (string-append "0" (number->string i))]
+   [else (number->string i)]))
+  
+(check-expect (three-digits 0) "000")
+(check-expect (three-digits 5) "005")
+(check-expect (three-digits 30) "030")
+
+; Display the time as minutes, seconds, and milliseconds, in the form "9:03.223".
+; You should always display three digits past the decimal point.
+(: format-time (Integer -> String))
+(define (format-time t)
+  (string-append (number->string (quotient t 100000)) ":"
+                 (two-digits (quotient (remainder t 100000) 1000)) "."
+                 (three-digits (remainder t 1000))))
+
+(check-expect (format-time 654321) "6:54.321")
+(check-expect (format-time 600000) "6:00.000")
+(check-expect (format-time 645007) "6:45.007")
+
+
+
+(: sample-data (Listof Finish))
+(define sample-data
+  (list
+   (Finish "Petersen" "Rhea" 550588 "Pepper" 5)
+   (Finish "Kumar" "Jennifer" 552342 "Central" 8)
+   (Finish "Jones" "Zelda" 552521 "Pepper" 5)
+   (Finish "Rosen" "Marci" 552961 "Pepper" 7)
+   (Finish "Anderson" "Pauline" 553188 "West" 7)
+   (Finish "Green" "Peggy" 553486 "Central" 5)
+   (Finish "Jameson" "Beyonce" 553510 "Mercy" 5)
+   (Finish "Jackson" "Patricia" 554045 "West" 5)
+   (Finish "Green" "Alexandra" 555005 "Ridgemont" 5)
+   (Finish "Williams" "Beyonce" 555783 "Harper" 8)
+   (Finish "Brown" "Cecilia" 555877 "West" 5)
+   (Finish "Cohen" "Sophia" 557265 "Pepper" 7)
+   (Finish "McBride" "Paula" 557313 "Mercy" 8)
+   (Finish "Rosen" "Pavithra" 557916 "Central" 7)
+   (Finish "Bingham" "Paula" 558498 "Laurel" 7)
+   (Finish "McBride" "Margaret" 559266 "Central" 5)
+   (Finish "Kumar" "Solange" 559525 "Harper" 5)
+   (Finish "Strickland" "Cecilia" 560445 "Pepper" 8)
+   (Finish "Craig" "Beyonce" 561214 "Harper" 6)
+   (Finish "Cohen" "Melissa" 561588 "Central" 5)
+   (Finish "Cohen" "Martha" 561907 "Laurel" 6)
+   (Finish "Sierpinski" "Arna" 563289 "Harper" 6)
+   (Finish "Green" "Pauline" 563466 "Central" 8)
+   (Finish "Bingham" "Sally" 564730 "Mercy" 7)
+   (Finish "Jones" "Mona" 564842 "Laurel" 7)
+   (Finish "Miller" "Mia" 564866 "Harper" 8)
+   (Finish "Rosen" "Selena" 566634 "Harper" 7)
+   (Finish "Kershaw" "Alice" 568149 "Harper" 5)
+   (Finish "Anderson" "Kathy" 568258 "Southeast" 8)
+   (Finish "Sellers" "Mia" 568429 "Ridgemont" 5)
+   (Finish "Brown" "Samantha" 568941 "West" 7)
+   (Finish "Cameron" "Margaret" 570560 "Central" 7)
+   (Finish "Jackson" "Peggy" 571115 "Mercy" 6)
+   (Finish "Douglas" "Marcia" 571229 "Southeast" 6)
+   (Finish "Bingham" "Elizabeth" 572615 "Mercy" 7)
+   (Finish "Mandelbrot" "Alexandra" 573950 "Central" 7)
+   (Finish "Douglas" "Jennifer" 574276 "Southeast" 7)
+   (Finish "Maclean" "Alice" 575320 "Southeast" 6)
+   (Finish "Douglas" "Arna" 575839 "Harper" 7)
+   (Finish "Maclean" "Claire" 576470 "West" 5)
+   (Finish "Miller" "Rebecca" 577740 "Harper" 8)
+   (Finish "White" "Martha" 578099 "Ridgemont" 7)
+   (Finish "Ramsey" "Beyonce" 580197 "West" 6)
+   (Finish "Kershaw" "Arna" 580497 "Laurel" 6)
+   (Finish "Maclean" "Rebecca" 580692 "Harper" 6)
+   (Finish "Williams" "Adithi" 580849 "Southeast" 6)
+   (Finish "Anderson" "Rhea" 581138 "Pepper" 5)
+   (Finish "Miller" "Martha" 581324 "Central" 6)
+   (Finish "Niven" "Christine" 581720 "Laurel" 5)
+   (Finish "Anderson" "Zetta" 582455 "Pepper" 6)
+   (Finish "Mandelbrot" "Mia" 582624 "Southeast" 8)
+   (Finish "Hopper" "Marci" 582916 "Pepper" 6)
+   (Finish "Bingham" "Kathy" 583331 "Harper" 8)
+   (Finish "Brown" "Elizabeth" 584290 "Central" 7)
+   (Finish "Patel" "Anne" 584533 "Central" 6)
+   (Finish "Sellers" "Esther" 586198 "Harper" 5)
+   (Finish "Cameron" "Kathy" 586389 "Ridgemont" 8)
+   (Finish "Connery" "Rebecca" 586636 "Ridgemont" 7)
+   (Finish "Cohen" "Jennifer" 586732 "Harper" 8)
+   (Finish "Johnson" "Zelda" 587009 "West" 8)
+   (Finish "Bingham" "Anne" 588437 "Pepper" 6)
+   (Finish "Peyton" "Rhea" 589620 "Mercy" 7)
+   (Finish "Cameron" "Sara" 590284 "West" 6)
+   (Finish "Jones" "Samantha" 591396 "Central" 7)
+   (Finish "Jameson" "Marci" 591555 "Pepper" 7)
+   (Finish "Mattison" "Esther" 592215 "Mercy" 6)
+   (Finish "Bingham" "Caroline" 592892 "Ridgemont" 5)
+   (Finish "Douglas" "Pavithra" 595182 "Harper" 8)
+   (Finish "Ramsey" "Mia" 595465 "Ridgemont" 8)
+   (Finish "Maclean" "Elizabeth" 596543 "Ridgemont" 5)
+   (Finish "Maclean" "Mona" 597687 "Laurel" 5)
+   (Finish "James" "Melissa" 597920 "Mercy" 5)
+   (Finish "Cohen" "Selena" 598903 "Laurel" 7)
+   (Finish "Craig" "Melissa" 598977 "West" 6)
+   (Finish "Hopper" "Patricia" 599633 "Mercy" 7)
+   (Finish "Schultz" "Samantha" 599684 "Mercy" 7)
+   (Finish "Douglas" "Rachel" 599728 "Ridgemont" 6)
+   (Finish "Watts" "Penelope" 600465 "Southeast" 7)
+   (Finish "James" "Mona" 601092 "Southeast" 7)
+   (Finish "Shapiro" "Jennifer" 601150 "Ridgemont" 5)
+   (Finish "Narayan" "Pavithra" 601491 "Ridgemont" 6)
+   (Finish "Williams" "Alice" 602112 "Central" 7)
+   (Finish "Craig" "Arna" 602230 "Harper" 6)
+   (Finish "Ramsey" "Solange" 602879 "Southeast" 5)
+   (Finish "Johnson" "Sophia" 603051 "Laurel" 8)
+   (Finish "Kershaw" "Sally" 603332 "Laurel" 6)
+   (Finish "Black" "Sally" 603401 "West" 8)
+   (Finish "Schultz" "Marcia" 603521 "Harper" 5)
+   (Finish "Brown" "Rachel" 603918 "Ridgemont" 5)
+   (Finish "Moore" "Elizabeth" 604221 "Laurel" 7)
+   (Finish "Watts" "Cecilia" 605602 "Pepper" 7)
+   (Finish "Hopkinson" "Zetta" 606148 "West" 5)
+   (Finish "McBride" "Selena" 606932 "Harper" 5)
+   (Finish "Kumar" "Sophia" 607778 "Ridgemont" 8)
+   (Finish "Cohen" "Samantha" 608190 "Pepper" 5)
+   (Finish "Miller" "Mona" 608326 "Southeast" 6)
+   (Finish "Ballard" "Shreya" 609172 "West" 7)
+   (Finish "Bingham" "Rachel" 609177 "Mercy" 8)
+   (Finish "Petersen" "Pavithra" 611143 "Laurel" 7)
+   (Finish "Mattison" "Rhea" 611204 "Laurel" 7)))
+
+(test)

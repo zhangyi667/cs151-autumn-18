@@ -1,0 +1,27 @@
+;; Lab 5 guideline
+
+;; === correctness ===
+ 
+tally             13 / 13
+
+winner?           13 / 13
+
+election          13 / 13
+
+election-report   13 / 13
+
+;; === style ===
+
+;; code layout                       6 /  6
+;; identifiers are well named        6 /  6
+;; program decomposition (helpers)   12 / 12
+
+;; contracts (type ascriptions)      6 /  6
+;; well-written purposes             6 /  6
+;; adequate tests                    6 /  6
+
+;; clarity (clear logic)             6 /  6
+
+;; _total-score_                   100 / 100
+
+;; graded by Pramod

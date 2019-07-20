@@ -1,0 +1,33 @@
+;; Lab 2 guideline
+
+;; === correctness ===
+
+marginal-tax     8 / 8
+
+pet-deduction    5 / 6  ;; should be <=9
+hybrid-deduction 6 / 6
+
+itemized         3 / 6	
+standard         3 / 6	
+
+should-itemize?  6 / 6
+
+tax-return       6 / 6
+
+;; === style ===
+
+;; code layout                       6 / 6  
+;; identifiers are well named        6 / 6
+;; program decomposition (helpers)   6 / 6
+
+;; contracts (type ascriptions)      6 / 6
+;; well-written purposes             8 / 8
+;; adequate tests                    10 /12 ;; could have more tests for each function
+
+;; clarity (clear logic)             8 / 8
+
+;; svn used correctly                4 / 4
+
+;; _total-score_                   97 / 100
+
+;; graded by dingy

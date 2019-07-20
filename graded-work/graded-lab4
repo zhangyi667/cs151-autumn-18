@@ -1,0 +1,49 @@
+;; Lab 4 guideline
+;; Student: ellynliu
+
+;; === correctness ===
+ 
+format-time 5/ 5
+
+strictly-ascending-times? 5/ 5
+
+find-finish 5/ 5
+
+from-grade 5/ 5
+
+from-school 5/ 5
+
+top-n 5/ 5
+
+top-n-from-school 5/ 5
+
+top-n-from-grade 5/ 5
+
+mean-time 5/ 5
+
+rank-race 6/ 6
+
+team-score 6/ 6
+
+;; === style ===
+
+;; code layout                        6/ 6
+;; identifiers are well named         6/ 6
+;; program decomposition (helpers)    6/ 6
+
+;; contracts (type ascriptions)       6/ 6
+;; well-written purposes              6/ 6
+;; adequate tests                     6/ 6
+
+;; clarity (clear logic)              6/ 6
+
+;; svn used correctly                 1/ 1
+
+;; _total-score_                    100/ 100
+
+;; graded by Natalia Kisanga
+
+;; -------------- Grader Comments --------------
+
+
+Great Job!

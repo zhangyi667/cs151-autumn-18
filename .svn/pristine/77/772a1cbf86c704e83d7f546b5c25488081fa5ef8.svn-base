@@ -1,0 +1,112 @@
+#lang typed/racket
+(require typed/test-engine/racket-tests)
+
+(require "../include/cs151-core.rkt")
+(require "../include/cs151-image.rkt")
+(require "../include/cs151-universe.rkt")
+
+(: dt Positive-Real)
+(define dt 1/30)
+
+(define-struct Ball
+  ([y-position : Real] ;; the height of the ball's center in meters, with the ground y=0
+   [radius     : Integer] ;; in meters
+   [velocity   : Real] ;; in meters per second
+   [elasticity : Real] ;; a number between 0 and 1
+   [color      : Image-Color]))
+
+(define-struct World
+  ([ball1 : Ball]
+   [ball2 : Ball]
+   [ball3 : Ball]
+   [background : Image]
+   [time-elapsed : Real]))
+
+;; make-circle: helper function to draw circle given Ball
+(: make-circle (Ball -> Image))
+(define (make-circle b)
+  (circle (Ball-radius b) "solid" (Ball-color b)))
+
+;; y-position: helper function returns corrected y-value so y=0 is the ground
+(: y-position (Image Ball -> Real))
+(define (y-position image b)
+  (- (image-height image) (Ball-y-position b) (Ball-radius b)))
+
+(: draw (World -> Image))
+(define (draw w)
+  (match w
+    [(World b1 b2 b3 image time)
+     (above
+      (text (number->string (exact-ceiling time)) 30 "black")
+      (text (string-append
+             (number->string (exact-ceiling (Ball-y-position b1)))
+             "          "
+             (number->string (exact-ceiling (Ball-y-position b2)))
+             "          "
+             (number->string (exact-ceiling (Ball-y-position b3)))) 20 "black")
+      (place-image (make-circle b1)
+       (exact-ceiling (* 1/4 (image-width image))) (y-position image b1)
+       (place-image (make-circle b2)
+        (exact-ceiling (* 1/2 (image-width image))) (y-position image b2)
+        (place-image (make-circle b3)
+         (exact-ceiling (* 3/4 (image-width image))) (y-position image b3)
+         image))))]))
+
+;; new-velocity: helper function for ball's new velocity after bounce
+(: new-velocity (Ball -> Real))
+(define (new-velocity b)
+  (max 0 (- (* (- (Ball-elasticity b)) (Ball-velocity b)) 0.5)))
+
+;; after-bounce-location: helper function for ball's next y-position after bounce
+(: after-bounce-location (Ball -> Real))
+(define (after-bounce-location b)
+  (* dt (new-velocity b)))
+
+;; next-location: helper function for the ball's next y-position
+(: next-location (Ball -> Real))
+(define (next-location b)
+   (+ (Ball-y-position b) (* (Ball-velocity b) dt)))
+
+;; velocity-change: helper function for ball's new velocity while accelerating
+(: velocity-change (Ball -> Real))
+(define (velocity-change b)
+  (+ (Ball-velocity b) (* dt (- 9.8))))
+
+(: tick-ball (Ball -> Ball))
+(define (tick-ball b)
+  (cond
+    [(<= (Ball-y-position b) 0) ;; ball is below ground
+     (Ball (after-bounce-location b)
+           (Ball-radius b)
+           (new-velocity b)
+           (Ball-elasticity b)
+           (Ball-color b))]
+    [(< (next-location b) 0) ;; if ball is still below ground, set y-value to 0
+     (Ball 0
+           (Ball-radius b)
+           (velocity-change b)
+           (Ball-elasticity b)
+           (Ball-color b))]
+    [else ;; ball is falling or rising normally due to gravity
+     (Ball (next-location b)
+           (Ball-radius b)
+           (velocity-change b)
+           (Ball-elasticity b)
+           (Ball-color b))]))
+
+(: tick (World -> World))
+(define (tick w)
+  (match w
+    [(World b1 b2 b3 image time)
+     (World (tick-ball b1) (tick-ball b2) (tick-ball b3) image (+ dt time))]))
+
+(: run-simulation (Ball Ball Ball Image -> World))
+(define (run-simulation b1 b2 b3 image)
+  (big-bang (World b1 b2 b3 image 0) : World
+    [to-draw draw]
+    [on-tick tick]))
+
+(run-simulation (Ball 500 20 0 0.7 "red")
+                (Ball 500 20 0 0.9 "yellow")
+                (Ball 500 20 0 0.5 "blue")
+                (rectangle 500 500 "solid" "silver"))

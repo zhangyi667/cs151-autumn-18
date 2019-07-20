@@ -1,0 +1,69 @@
+;; === correctness ===
+
+;; board=?                                     / 4
+;; board-copy                                  / 4
+
+;; updated board-ref                           2/ 3
+
+;;grader: board-ref is sometimes returning 'None when it should be (Some 'black) and sometimes returning 'white instead of 'black. 
+
+;; board-set!                                  / 3
+;; updated drawing                             / 5
+;; updated put-stone-at                        / 2
+
+;; legal-move?
+;; - valid board location                      1/ 2
+;; - intersection is empty                     / 2
+;; - history will not repeat                   / 3
+;;grader: consider:
+(check-expect
+ (legal-move?
+   (Go
+    (vector
+     (vector 'None 'None (Some 'white) 'None)
+     (vector 'None (Some 'black) (Some 'black) 'None)
+     (vector 'None (Some 'white) 'None 'None)
+     (vector 'None 'None 'None 'None))
+    'black
+    (list
+     (vector
+     (vector (Some 'black) 'None (Some 'white) 'None)
+     (vector 'None (Some 'black) (Some 'black) 'None)
+     (vector 'None (Some 'white) 'None 'None)
+     (vector 'None 'None 'None 'None))))
+   (LogicalLoc 0 0)) #f)
+
+;; apply-move
+;; - stone is placed                           / 1
+;; - chain to be captured is identified        / 6
+;; - captured pieces are removed               / 3
+;; - self-capture                              / 3
+;; - history is recorded                       / 2
+
+;; play
+;; - clicks apply legal moves                  / 2
+;; - clicks gracefully reject illegal moves    / 2
+;; - passes work                               / 2
+;; - appropriate status messages               / 6
+
+;; deductions for issues not explicitly identified above:
+
+;; === style ===
+
+;; code layout                                 / 6
+;; identifiers are well named                  / 6
+;; program decomposition (helpers)             / 6
+;; code is redundant                           / 6
+
+;; contracts (type ascriptions)                / 4
+;; well-written purposes                       / 5
+;; adequate tests                              / 5
+
+;; clarity (clear logic)                       / 6
+
+;; svn used correctly                          0/ 1 ;;grader: make sure to include bigbang/universe in your svn
+
+;; _total-score_                               97/ 100
+
+;; Graded by Wendy 
+;; Nice Job!

@@ -1,0 +1,346 @@
+#lang typed/racket
+
+(require typed/test-engine/racket-tests)
+
+(require "../include/cs151-core.rkt")
+(require "../include/cs151-image.rkt")
+(require "../include/cs151-universe.rkt")
+
+;; data definitions
+
+(define-struct (Some a)
+  ([value : a]))
+
+(define-type (Optional a)
+  (U 'None (Some a)))
+
+(define-type Stone
+  (U 'black 'white))
+
+(define-struct LogicalLoc
+  ([col : Integer]
+   [row : Integer]))
+   
+(define-struct Go
+  ([dimension : Integer]
+   [black-stones : (Listof LogicalLoc)]
+   [white-stones : (Listof LogicalLoc)]
+   [next-to-play : Stone]))
+
+(define-struct PhysicalLoc
+  ([x-offset-from-left : Integer]
+   [y-offset-from-top  : Integer]))
+
+(define-struct BoardSpec
+  ([background-color : Image-Color]
+   [cell-size-pixels : Integer]
+   [margin-pixels : Integer]
+   [stone-radius-pixels : Integer]))
+
+(define-struct World
+  ([spec : BoardSpec]
+   [game : Go]
+   [status-message : String]))
+
+;; the integer argument is the dimension (locations per side) of the board
+(: logical->physical : LogicalLoc Integer BoardSpec -> PhysicalLoc)
+(define (logical->physical ll n bs)
+  (match* (ll bs)
+    [((LogicalLoc x y) (BoardSpec _ cell mar _))
+     (PhysicalLoc (+ mar (* x cell)) (+ mar (* (- n y 1) cell)))]))
+
+;(check-expect (logical->physical (LogicalLoc 1 1) 19 (BoardSpec 'tan 20 12 5))
+;              (PhysicalLoc 32 372))
+;(check-expect (logical->physical (LogicalLoc 18 2) 19 (BoardSpec 'tan 12 5 4))
+;              (PhysicalLoc 221 209))
+;(check-expect (logical->physical (LogicalLoc 0 0) 19 (BoardSpec 'tan 24 14 7))
+;              (PhysicalLoc 14 470)) 
+(check-expect (logical->physical (LogicalLoc 0 0) 3 (BoardSpec 'tan 10 12 3))
+              (PhysicalLoc 12 32))
+(check-expect (logical->physical (LogicalLoc 1 0) 3 (BoardSpec 'tan 10 12 3))
+              (PhysicalLoc 22 32))
+(check-expect (logical->physical (LogicalLoc 0 1) 3 (BoardSpec 'tan 10 12 3))
+              (PhysicalLoc 12 22))
+
+(: dist : PhysicalLoc PhysicalLoc -> Real)
+(define (dist orig calc)
+  (match* (orig calc)
+      [((PhysicalLoc x y) (PhysicalLoc xx yy))
+       (sqrt (+ (sqr (- xx x)) (sqr (- yy y))))]))
+    
+(: in-margin? : PhysicalLoc Integer BoardSpec -> Boolean)
+(define (in-margin? pl n bs)
+  (match* (pl bs)
+    [((PhysicalLoc x y) (BoardSpec _ cell mar _))
+     (local {(define d (+ mar mar (* cell (sub1 n))))}
+       (and (<= x d) (<= y d)))]))
+
+;; in-margin checks if the point is in the grid
+;; llx and lly are place-holder values that get fed into log-> phy
+;; to be compared to the orginal physical location
+;; the integer argument is the dimension (locations per side) of the board
+(: physical->logical : PhysicalLoc Integer BoardSpec -> (Optional LogicalLoc))
+(define (physical->logical pl n bs)
+  (if (in-margin? pl n bs)
+      (match* (pl bs)
+        [((PhysicalLoc x y) (BoardSpec _ cell mar r))
+         (local {(define llx (round (/ (- x mar) cell)))
+                 (define lly (round (- (sub1 n) (/ (- y mar) cell))))}
+           (match (logical->physical (LogicalLoc llx lly) n bs)
+             [(PhysicalLoc xx yy) (if (< (dist (PhysicalLoc xx yy) (PhysicalLoc x y)) r)
+                                  (Some (LogicalLoc llx lly))
+                                  'None)]))])
+      'None))
+
+(check-expect
+ (physical->logical (PhysicalLoc 12 32) 3 (BoardSpec 'tan 10 12 3))
+ (Some (LogicalLoc 0 0)))
+(check-expect
+ (physical->logical (PhysicalLoc 14 31) 3 (BoardSpec 'tan 10 12 3))
+ (Some (LogicalLoc 0 0)))
+(check-expect
+ (physical->logical (PhysicalLoc 22 32) 3 (BoardSpec 'tan 10 12 3))
+ (Some (LogicalLoc 1 0)))
+(check-expect
+ (physical->logical (PhysicalLoc 250 250) 19 (BoardSpec 'tan 12 5 4)) 'None)
+(check-expect
+ (physical->logical (PhysicalLoc 90 45) 19 (BoardSpec 'tan 30 5 10)) 'None)
+(check-expect
+ (physical->logical (PhysicalLoc 27 377) 19 (BoardSpec 'tan 20 12 5)) 'None)                                                           
+
+;; takes an integer and converts it to a char
+(: num->let : Integer -> Char)
+(define (num->let x)
+  (cond
+    [(<= x 7) (integer->char (+ 65 x))]
+    [else (integer->char (+ 66 x))]))
+
+(check-expect (build-list 10 num->let)
+              '(#\A
+                #\B
+                #\C
+                #\D
+                #\E
+                #\F
+                #\G
+                #\H
+                #\J
+                #\K))
+
+;; uses num->let to make a string of appropriate length
+(: int->string : Integer -> String)
+(define (int->string n)
+  (make-string (+ 1 (quotient n 25)) (num->let (remainder n 25))))
+
+(check-expect (build-list 60 int->string) strings)
+
+;; Convert logical locations to strings such as "A1", "B3", etc.
+;; Note the letter "I" is skipped in Go labeling.
+;; When you get a column past "Z", use "AA", then "BB", then "CC", etc.
+;; When you get past "ZZ", use "AAA", then "BBB", etc.
+(: logical->string : LogicalLoc -> String)
+(define (logical->string ll)
+  (match ll
+    [(LogicalLoc x y)
+       (string-append (int->string x) (number->string (+ y 1)))]))
+
+(check-expect (logical->string (LogicalLoc 0 0)) "A1")
+(check-expect (logical->string (LogicalLoc 1 10)) "B11")
+(check-expect (logical->string (LogicalLoc 19 19)) "U20")
+
+;; true if the two LogicalLocs are the same position
+(: same-ll? : LogicalLoc LogicalLoc -> Boolean)
+(define (same-ll? ll1 ll2)
+  (match* (ll1 ll2)
+    [((LogicalLoc x1 y1) (LogicalLoc x2 y2))
+     (and (= x1 x2) (= y1 y2))]))
+
+(: find-ll : (Listof LogicalLoc) LogicalLoc -> (Optional LogicalLoc))
+(define (find-ll list ll)
+  (match list
+    ['() 'None]
+    [(cons hd tl) (if (same-ll? hd ll) (Some ll) (find-ll tl ll))]))
+
+;; Return the stone at the specified location on the board,
+;; or indicate it is unoccupied
+(: board-ref : Go LogicalLoc -> (Optional Stone))
+(define (board-ref go ll)
+  (match go
+    [(Go _ b w _)
+     (match (find-ll b ll)
+       [(Some x) (Some 'black)]
+       ['None (match (find-ll w ll)
+                [(Some x) (Some 'white)]
+                ['None 'None])])]))
+              
+(check-expect (board-ref test-go (LogicalLoc 2 2)) (Some 'white))
+(check-expect (board-ref test-go (LogicalLoc 3 4)) (Some 'black))
+(check-expect (board-ref test-go (LogicalLoc 1 1)) (Some 'black))
+(check-expect (board-ref test-go (LogicalLoc 5 3)) 'None)
+
+;; If the named location is unoccupied, put the stone there and advance the player, and
+;; return Some Go struct. Return 'None if the location is already occupied.
+;; Raise an error if the stone to be placed does not match the color of the
+;;  player whose turn is indicated by the Go struct.
+(: put-stone-at : LogicalLoc Stone Go -> (Optional Go))
+(define (put-stone-at ll s go)
+  (match go
+    [(Go d b w next)
+     (if (not (symbol=? s next))
+         (error "not your turn")
+         (match (board-ref go ll)
+               ['None
+                (match next
+                  ['black (Some (Go d (cons ll b) w 'white))]
+                  ['white (Some (Go d b (cons ll w) 'black))])]
+               [_ 'None]))]))
+
+(check-expect (put-stone-at (LogicalLoc 1 1) 'black test-go) 'None)
+(check-expect (put-stone-at (LogicalLoc 9 1) 'black test-go)
+              (Some
+               (Go
+                19
+                (list
+                 (LogicalLoc 9 1)
+                 (LogicalLoc 1 1)
+                 (LogicalLoc 3 4))
+                (list (LogicalLoc 2 2))
+                'white)))
+(check-error (put-stone-at (LogicalLoc 9 1) 'white test-go) "not your turn")
+(check-expect (put-stone-at (LogicalLoc 2 6) 'white test1)
+              (Some
+               (Go
+                19
+                (list
+                 (LogicalLoc 1 1)
+                 (LogicalLoc 3 4)
+                 (LogicalLoc 2 1))
+                (list
+                 (LogicalLoc 2 6)
+                 (LogicalLoc 2 2)
+                 (LogicalLoc 1 2))
+                'black)))
+
+;; used in check-expects
+(: test-go : Go)
+(define test-go
+  (Go 19 (list (LogicalLoc 1 1) (LogicalLoc 3 4)) (list (LogicalLoc 2 2)) 'black))
+
+(: test1 : Go)
+(define test1
+  (Go 19 (list (LogicalLoc 1 1) (LogicalLoc 3 4) (LogicalLoc 2 1))
+      (list (LogicalLoc 2 2) (LogicalLoc 1 2)) 'white))
+
+;; board is valid if given positive inputs, stone radius is less than half
+;; cell size, and the margin is greater than the radius
+(: valid-board-spec? : BoardSpec -> Boolean)
+(define (valid-board-spec? bs)
+  (match bs
+    [(BoardSpec _ cell mar r) (and (>= cell 0)
+                                   (>= mar 0)
+                                   (>= r 0)
+                                   (> (/ cell 2) r)
+                                   (> mar r))]))
+
+(check-expect (valid-board-spec? (BoardSpec 'tan 10 12 5)) #f)
+(check-expect (valid-board-spec? (BoardSpec 'tan -9 12 3)) #f)
+(check-expect (valid-board-spec? (BoardSpec 'tan 10 2 3)) #f)
+(check-expect (valid-board-spec? (BoardSpec 'tan 9 12 3)) #t)
+
+;; used to make grid
+(: gen-block : (Image Image -> Image) Image Integer -> Image)
+(define (gen-block arr img n)
+  (foldr arr empty-image (make-list n img)))
+
+;; draws grid
+(: grid : Integer Integer -> Image)
+(define (grid cell dim)
+  (gen-block above (gen-block beside (square cell 'outline 'black) (sub1 dim)) (sub1 dim)))
+
+"eyeball test"
+(grid 15 5)
+
+(: draw-world : World -> Image)
+(define (draw-world w)
+  (match w
+    [(World bs go mes)
+     (match* (bs go)
+       [((BoardSpec col cell mar _) (Go dim _ _ _))
+        (overlay (grid cell dim)
+                 (square (+ mar mar (* cell dim)) 'solid col))])]))
+;(define-struct World
+;  ([spec : BoardSpec]
+;   [game : Go]
+;   [status-message : String]))
+;(: play : Integer BoardSpec -> World)
+;(define (play n bs)
+;  (big-bang (World bs go mes)
+;    [to-draw : draw-world]
+;    [on-mouse : handle-click]
+;    [on-key : handle-key]))
+
+;; used for check-expect
+(: strings : (Listof String))
+(define strings
+  '("A"
+    "B"
+    "C"
+    "D"
+    "E"
+    "F"
+    "G"
+    "H"
+    "J"
+    "K"
+    "L"
+    "M"
+    "N"
+    "O"
+    "P"
+    "Q"
+    "R"
+    "S"
+    "T"
+    "U"
+    "V"
+    "W"
+    "X"
+    "Y"
+    "Z"
+    "AA"
+    "BB"
+    "CC"
+    "DD"
+    "EE"
+    "FF"
+    "GG"
+    "HH"
+    "JJ"
+    "KK"
+    "LL"
+    "MM"
+    "NN"
+    "OO"
+    "PP"
+    "QQ"
+    "RR"
+    "SS"
+    "TT"
+    "UU"
+    "VV"
+    "WW"
+    "XX"
+    "YY"
+    "ZZ"
+    "AAA"
+    "BBB"
+    "CCC"
+    "DDD"
+    "EEE"
+    "FFF"
+    "GGG"
+    "HHH"
+    "JJJ"
+    "KKK"))
+
+(test)
