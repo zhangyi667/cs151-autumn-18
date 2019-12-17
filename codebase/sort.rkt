@@ -2,7 +2,7 @@
 (require typed/test-engine/racket-tests)
 (require "../include/cs151-core.rkt")
 
-; this file contains two sorting method: bubble sort and quick sort
+; this file contains 3 sorting method: bubble sort, quick sort and merge sort
 
 (: generate-random-list : Integer (Listof Integer) -> (Listof Integer))
 (define (generate-random-list len ls)
@@ -76,5 +76,67 @@
 (check-expect (is-sorted? (quick-sort (generate-random-list 20 '()))) #t)
 (check-expect (is-sorted? (quick-sort (generate-random-list 30 '()))) #t)
 (check-expect (is-sorted? (quick-sort (generate-random-list 40 '()))) #t)
+
+
+; preffix n elements of a list
+(: preffix (All (T) (Listof T) Integer -> (Listof T)))
+(define (preffix ls num)
+	(if (or (<= num 0) (empty? ls)) 
+		'() 
+		(match ls
+			[(cons head tail) (cons head (preffix tail (sub1 num)))]
+		)
+	)
+)
+(check-expect (preffix '(a b c d e) 3) '(a b c))
+(check-expect (preffix '(a b c) 0) '())
+(check-expect (preffix '(x y z) 99) '(x y z))
+
+(: suffix (All (T) (Listof T) Integer -> (Listof T)))
+; suffix elements of a list from the nth element
+(define (suffix ls num)
+	(cond
+	 [(<= num 0) ls]
+	 [(empty? ls) '()]
+	 [else (match ls
+	 		[(cons head tail) (suffix tail (sub1 num))]
+ 		)]
+ 	)
+)
+(check-expect (suffix '(a b c d e f) 3) '(d e f))
+(check-expect (suffix '(a b c d e f) 4) '(e f))
+(check-expect (suffix '(a b c) 5) '())
+(check-expect (suffix '(a b c) 0) '(a b c))
+
+
+(: merge : (Listof Integer) (Listof Integer) -> (Listof Integer))
+(define (merge left right)
+	(match* (left right)
+		[('() '()) '()]
+		[('() _) right]
+		[(_ '()) left]
+		[((cons hl tl) (cons hr tr)) (if (<= hl hr)
+			(append (list hl) (merge tl right))
+			(append (list hr) (merge left tr))
+			)]
+	)
+)
+
+
+(: merge-sort : (Listof Integer) -> (Listof Integer))
+(define (merge-sort ls)
+	(local
+		{(define n (exact-floor (/ (length ls) 2)))}
+		(if (= n 0) ls
+			(merge (merge-sort (preffix ls n)) (merge-sort (suffix ls n)))
+		)
+	)
+)
+
+(check-expect (is-sorted? (merge-sort (generate-random-list 10 '()))) #t)
+(check-expect (is-sorted? (merge-sort (generate-random-list 20 '()))) #t)
+(check-expect (is-sorted? (merge-sort (generate-random-list 30 '()))) #t)
+(check-expect (is-sorted? (merge-sort (generate-random-list 40 '()))) #t)
+(check-expect (merge-sort '(1 4 -1 2 5 5 3 16 3)) '(-1 1 2 3 3 4 5 5 16))
 
 (test)
